@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Weather</string>
+    <string name="title_activity_main">Home</string>
+    <string name="find_city">Find your City</string>
+</resources>
