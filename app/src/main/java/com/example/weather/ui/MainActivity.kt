@@ -54,16 +54,20 @@ class MainActivity : AppCompatActivity() {
                 if (it != null) {
                     currentLocation = Location(lat = it.latitude, lon = it.longitude)
                 }
-                setContent {
-                    WeatherTheme {
-                        MainActivityNavigation(currentLocation)
+                lifecycleScope.launch(Dispatchers.Main) {
+                    setContent {
+                        WeatherTheme {
+                            MainActivityNavigation(currentLocation)
+                        }
                     }
                 }
             }
         } else {
-            setContent {
-                WeatherTheme {
-                    MainActivityNavigation(currentLocation)
+            lifecycleScope.launch(Dispatchers.Main) {
+                setContent {
+                    WeatherTheme {
+                        MainActivityNavigation(currentLocation)
+                    }
                 }
             }
         }

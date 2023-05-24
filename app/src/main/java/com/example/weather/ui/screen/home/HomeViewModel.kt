@@ -58,9 +58,11 @@ class HomeViewModel() : ViewModel() {
      */
     internal fun fetchSavedLocations() {
         viewModelScope.launch(Dispatchers.IO) {
-            locationRepository.getSavedLocations { locations ->
-                savedLocations.addAll(locations)
-                fetchWeatherData()
+            locationRepository.getSavedLocations {
+                viewModelScope.launch(Dispatchers.Main) {
+                    savedLocations.addAll(it)
+                    fetchWeatherData()
+                }
             }
         }
     }
