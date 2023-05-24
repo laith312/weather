@@ -6,10 +6,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
 import androidx.compose.material3.Surface
@@ -49,13 +51,24 @@ fun HomeScreenComposable(navController: NavController, defaultLocation: Location
                 .fillMaxSize()
                 .background(Color.Cyan)
         ) {
-            Column {
-                Button(onClick = {
-                    navController.navigate(Screen.SearchScreen.route)
-                }, Modifier.padding(top = 5.dp)) {
-                    Text(text = "Add city", fontSize = 30.sp)
+            Row() {
+                Column {
+                    Button(onClick = {
+                        navController.navigate(Screen.SearchScreen.route)
+                    }, Modifier.padding(top = 5.dp)) {
+                        Text(text = "Add city", fontSize = 30.sp)
+                    }
+                }
+                Spacer(Modifier.width(20.dp))
+                Column {
+                    Button(onClick = {
+                        viewModel.clearLocations()
+                    }, Modifier.padding(top = 5.dp)) {
+                        Text(text = "Clear", fontSize = 30.sp)
+                    }
                 }
             }
+
             if (viewModel.weatherConditions.isEmpty()) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,

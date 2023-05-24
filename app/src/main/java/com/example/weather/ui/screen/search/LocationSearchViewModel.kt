@@ -3,23 +3,24 @@ package com.example.weather.ui.screen.search
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.weather.WeatherApplication
 import com.example.weather.data.Location
-import com.example.weather.data.LocationSearch
+import com.example.weather.network.OpenWeatherMapAPI
+import com.example.weather.repository.LocationRepository
 import com.example.weather.repository.OpenWeatherRepository
-import com.google.gson.Gson
+import com.example.weather.repository.SavedLocationRepositoryInterface
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import retrofit2.awaitResponse
 
 
 class LocationSearchViewModel : ViewModel() {
+    // Use Koin to inject these
+    var locationRepository: SavedLocationRepositoryInterface = LocationRepository()
+    var weatherRepository: OpenWeatherMapAPI = OpenWeatherRepository.instance
+
     // Stores the city text field value
     var city by mutableStateOf("")
         private set
@@ -69,13 +70,12 @@ class LocationSearchViewModel : ViewModel() {
         viewModelScope.launch(handler) {
             require(zipCode.length == 5) { "incorrect zipcode" }
             // TODO make OpenWeatherRepository injectable with Koin. It can be passed to the viewModel
-            val response = OpenWeatherRepository.instance.getLocationByZip(zipCode).awaitResponse()
+            val response = weatherRepository.getLocationByZip(zipCode).awaitResponse()
             if (response.isSuccessful) {
                 val result: Location? = response.body()
                 result?.let {
                     locationResult = listOf(it)
                 }
-
             } else {
                 throw Exception(response.errorBody()?.string() ?: "")
             }
@@ -97,16 +97,8 @@ class LocationSearchViewModel : ViewModel() {
     }
 
     fun addLocation(location: Location) {
-        // TODO - RoomDB - This should be written to a RoomDB
-        val dataStoreKey = stringPreferencesKey("locations_key")
         viewModelScope.launch {
-            WeatherApplication.dataStore.edit { locations ->
-                val preferences = WeatherApplication.dataStore.data.first()
-                val current = Gson().fromJson(preferences[dataStoreKey], LocationSearch::class.java)
-                    ?: LocationSearch()
-                current.add(location)
-                locations[dataStoreKey] = Gson().toJson(current)
-            }
+            locationRepository.saveLocation(location)
         }
     }
 }

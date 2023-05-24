@@ -50,6 +50,7 @@ fun SearchScreenComposable(navController: NavController) {
     WeatherTheme {
         val viewModel = viewModel<LocationSearchViewModel>()
         val focusManager = LocalFocusManager.current
+        val context = LocalContext.current
 
         Column(
             modifier = Modifier

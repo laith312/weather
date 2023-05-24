@@ -2,25 +2,26 @@ package com.example.weather.ui.screen.home
 
 import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.weather.WeatherApplication
 import com.example.weather.data.Location
-import com.example.weather.data.LocationSearch
 import com.example.weather.data.WeatherCondition
+import com.example.weather.network.OpenWeatherMapAPI
+import com.example.weather.repository.LocationRepository
 import com.example.weather.repository.OpenWeatherRepository
-import com.google.gson.Gson
+import com.example.weather.repository.SavedLocationRepositoryInterface
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import retrofit2.awaitResponse
 
 
 class HomeViewModel() : ViewModel() {
-    private var savedLocations = mutableStateListOf<Location>()
+    // Use Koin to inject these
+    var locationRepository: SavedLocationRepositoryInterface = LocationRepository()
+    var weatherRepository: OpenWeatherMapAPI = OpenWeatherRepository.instance
+
+    var savedLocations = mutableStateListOf<Location>()
         private set
 
     var weatherConditions = mutableStateListOf<WeatherCondition>()
@@ -55,16 +56,10 @@ class HomeViewModel() : ViewModel() {
      * Fetch the saved location for our "Repository" <- currently just a dataStore.
      * Also, the repository would be injected using Koin dependency injection.
      */
-    private fun fetchSavedLocations() {
-        val dataStoreKey = stringPreferencesKey("locations_key")
-        // TODO RoomDB - This should be fetched from a RoomDB
-        viewModelScope.launch {
-            WeatherApplication.dataStore.edit { locations ->
-                val preferences = WeatherApplication.dataStore.data.first()
-                val current = Gson().fromJson(preferences[dataStoreKey], LocationSearch::class.java)
-                current?.let {
-                    savedLocations.addAll(it)
-                }
+    internal fun fetchSavedLocations() {
+        viewModelScope.launch(Dispatchers.IO) {
+            locationRepository.getSavedLocations { locations ->
+                savedLocations.addAll(locations)
                 fetchWeatherData()
             }
         }
@@ -73,13 +68,13 @@ class HomeViewModel() : ViewModel() {
     /**
      * Use the saved locations held by the ViewModel to query the weather data for each location
      */
-    private fun fetchWeatherData() {
+    internal fun fetchWeatherData() {
         viewModelScope.launch(handler) {
             weatherConditions.clear()
             for (location in savedLocations) {
                 // TODO make OpenWeatherRepository injectable with Koin. It can be passed to the viewModel
                 val response =
-                    OpenWeatherRepository.instance.getWeatherConditionData(
+                    weatherRepository.getWeatherConditionData(
                         location.lat.toString(),
                         location.lon.toString()
                     )
@@ -96,5 +91,20 @@ class HomeViewModel() : ViewModel() {
                 }
             }
         }
+    }
+
+    fun clearLocations() {
+        viewModelScope.launch(Dispatchers.IO) {
+            locationRepository.clearSavedLocations() {
+                addDefaultLocation(null)
+            }
+        }
+    }
+
+    /**
+     * Help method of testing to add locations manually to the list.
+     */
+    fun addLocation(location: Location) {
+        savedLocations.add(location)
     }
 }

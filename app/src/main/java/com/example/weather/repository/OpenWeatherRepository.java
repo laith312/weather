@@ -42,7 +42,7 @@ public class OpenWeatherRepository {
                 .build();
     }
 
-    private static Cache buildCache() {
+    public static Cache buildCache() {
         return new Cache(new File(WeatherApplication.appContext.getCacheDir(), "id"), cacheSize);
     }
 
