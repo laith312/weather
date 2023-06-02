@@ -72,24 +72,26 @@ class HomeViewModel() : ViewModel() {
      */
     internal fun fetchWeatherData() {
         viewModelScope.launch(handler) {
-            weatherConditions.clear()
-            for (location in savedLocations) {
-                // TODO make OpenWeatherRepository injectable with Koin. It can be passed to the viewModel
-                val response =
-                    weatherRepository.getWeatherConditionData(
-                        location.lat.toString(),
-                        location.lon.toString()
-                    )
-                        .awaitResponse()
-                if (response.isSuccessful) {
-                    val result: WeatherCondition? = response.body()
-                    result?.let {
-                        weatherConditions.add(result)
-                    }
+            launch(Dispatchers.IO) {
+                weatherConditions.clear()
+                for (location in savedLocations) {
+                    // TODO make OpenWeatherRepository injectable with Koin. It can be passed to the viewModel
+                    val response =
+                        weatherRepository.getWeatherConditionData(
+                            location.lat.toString(),
+                            location.lon.toString()
+                        )
+                            .awaitResponse()
+                    if (response.isSuccessful) {
+                        val result: WeatherCondition? = response.body()
+                        result?.let {
+                            weatherConditions.add(result)
+                        }
 
-                } else {
-                    Log.e(HomeViewModel::class.java.simpleName, "Error: ${response.message()}")
-                    throw Exception(response.errorBody()?.string() ?: "")
+                    } else {
+                        Log.e(HomeViewModel::class.java.simpleName, "Error: ${response.message()}")
+                        throw Exception(response.errorBody()?.string() ?: "")
+                    }
                 }
             }
         }

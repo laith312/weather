@@ -69,15 +69,18 @@ class LocationSearchViewModel : ViewModel() {
     fun searchZipCode(zipCode: String) {
         viewModelScope.launch(handler) {
             require(zipCode.length == 5) { "incorrect zipcode" }
-            // TODO make OpenWeatherRepository injectable with Koin. It can be passed to the viewModel
-            val response = weatherRepository.getLocationByZip(zipCode).awaitResponse()
-            if (response.isSuccessful) {
-                val result: Location? = response.body()
-                result?.let {
-                    locationResult = listOf(it)
+
+            launch(Dispatchers.IO) {
+                // TODO make OpenWeatherRepository injectable with Koin. It can be passed to the viewModel
+                val response = weatherRepository.getLocationByZip(zipCode).awaitResponse()
+                if (response.isSuccessful) {
+                    val result: Location? = response.body()
+                    result?.let {
+                        locationResult = listOf(it)
+                    }
+                } else {
+                    throw Exception(response.errorBody()?.string() ?: "")
                 }
-            } else {
-                throw Exception(response.errorBody()?.string() ?: "")
             }
         }
     }
@@ -85,19 +88,21 @@ class LocationSearchViewModel : ViewModel() {
     fun searchByCity() {
         viewModelScope.launch(handler) {
             require(city.isNotEmpty()) { "missing city" }
-            val response =
-                OpenWeatherRepository.instance.getLocationByCityName("$city,$state,$country")
-                    .awaitResponse()
-            if (response.isSuccessful) {
-                locationResult = response.body()!!.toList()
-            } else {
-                throw Exception(response.errorBody()?.string() ?: "")
+            launch(Dispatchers.IO) {
+                val response =
+                    OpenWeatherRepository.instance.getLocationByCityName("$city,$state,$country")
+                        .awaitResponse()
+                if (response.isSuccessful) {
+                    locationResult = response.body()!!.toList()
+                } else {
+                    throw Exception(response.errorBody()?.string() ?: "")
+                }
             }
         }
     }
 
     fun addLocation(location: Location) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             locationRepository.saveLocation(location)
         }
     }
